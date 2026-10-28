@@ -2,7 +2,8 @@
 
 ![Azure](https://img.shields.io/badge/Azure-East%20US-0078D4?logo=microsoftazure&logoColor=white)
 ![Windows Server](https://img.shields.io/badge/Windows%20Server-2022-0078D6?logo=windows&logoColor=white)
-![Status](https://img.shields.io/badge/Status-Step%204%20of%208-orange)
+![Linux](https://img.shields.io/badge/Ubuntu-24.04%20LTS-E95420?logo=ubuntu&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Step%205%20of%208-orange)
 ![Started](https://img.shields.io/badge/Started-Oct%202026-lightgrey)
 
 A working Azure environment I'm building from scratch while completing the IT Security and Administration program at MyComputerCareer. Every step is written up as I go: what I built, why it matters, what broke, and how I fixed it.
@@ -16,8 +17,8 @@ A working Azure environment I'm building from scratch while completing the IT Se
 | 1 | [Foundation](01-foundation/) | Networking, segmentation, firewall rules, cost control | ✅ Done |
 | 2 | [Windows Server domain](02-windows-domain/) | Active Directory, DNS, Group Policy, domain join | ✅ Done |
 | 3 | [Cloud identity](03-entra-id/) | Entra ID, cloud users, MFA enrollment | ✅ Done |
-| 4 | Linux | Ubuntu, web server, SSH hardening, ufw, Bash | 🔧 Next |
-| 5 | Security posture | Defender for Cloud, just-in-time VM access | ⬜ |
+| 4 | [Linux](04-linux/) | Ubuntu, nginx, SSH hardening, ufw, Bash | ✅ Done |
+| 5 | Security posture | Defender for Cloud, just-in-time VM access | 🔧 Next |
 | 6 | Backup and recovery | Azure Backup, test restore | ⬜ |
 | 7 | Monitoring | Log Analytics, alert rules | ⬜ |
 | 8 | Automation | PowerShell and Bash scripts | ⬜ |
@@ -26,14 +27,14 @@ A working Azure environment I'm building from scratch while completing the IT Se
 
 ```mermaid
 flowchart TB
-    Home["🏠 My laptop<br/>RDP 3389 / SSH 22<br/>from my public IP only"]
+    Home["🏠 My laptop<br/>RDP 3389 / SSH 22 / HTTP 80<br/>from my public IP only"]
     subgraph RG["Resource group: rg-homelab (East US)"]
         subgraph VNET["Virtual network: vnet-homelab (10.0.0.0/16)"]
             subgraph SRV["Subnet: snet-servers (10.0.1.0/24)"]
-                NSG["🔒 nsg-servers<br/>Allow RDP + SSH from home IP<br/>Deny everything else"]
+                NSG["🔒 nsg-servers<br/>Allow RDP + SSH + HTTP from my IP<br/>Deny everything else"]
                 DC["🖥️ vm-dc01 (10.0.1.4)<br/>Windows Server 2022<br/>Domain controller: homelab.local<br/>AD DS + DNS"]
                 MEM["🖥️ vm-member01 (10.0.1.5)<br/>Windows Server 2022<br/>Domain member"]
-                LNX["🐧 vm-linux01<br/>(coming in step 4)"]
+                LNX["🐧 vm-linux01 (10.0.1.6)<br/>Ubuntu 24.04 LTS<br/>nginx + ufw<br/>SSH key only, no root"]
             end
             subgraph CLI["Subnet: snet-clients (10.0.2.0/24)"]
                 WS["💻 workstations<br/>(later)"]
@@ -48,18 +49,14 @@ flowchart TB
     DC -. "domain join" .-> MEM
 ```
 
-## Cloud identity
-
-Alongside the on-prem domain, the lab has a Microsoft Entra ID tenant with its own cloud users and MFA enforced by security defaults. The two directories are separate: `tuser` exists only in Active Directory, `cloudtest` only in Entra ID. See [step 3](03-entra-id/).
-
 ## What's in here
 
 ```
 azure-home-lab/
   01-foundation/        resource group, VNet, subnets, NSG, budget
   02-windows-domain/    Windows Server 2022 VM, domain controller, AD, GPO
-  03-entra-id/          Entra ID tenant, cloud user, MFA
-  04-linux/
+  03-entra-id/          Entra ID tenant, cloud users, MFA
+  04-linux/             Ubuntu VM, nginx, ufw, SSH hardening, Bash script
   05-defender/
   06-backup/
   07-monitoring/
@@ -92,6 +89,11 @@ Every step follows the same four parts:
 - Entra ID and on-prem Active Directory are separate directories. Nothing syncs between them without Entra Connect.
 - Security defaults enforce MFA for a whole tenant for free. Conditional access needs a paid P1 license.
 - A personal Microsoft account can't open the M365 Admin Center, which is now the only place to start a P1 trial.
+- A wrong filename in Linux does not error. `nano` just opens a new empty file and quietly waits. Tab completion is the early warning.
+- Linux is case sensitive. `grep accepted` finds nothing when the log says `Accepted`.
+- An elevated Command Prompt on Windows starts in `System32`, not your user folder, so a relative path to an SSH key will not resolve.
+- Test an SSH config with `sshd -t` and prove a new session works before closing the old one. SSH is how you get in, so breaking it locks you out.
+- Two firewalls is not redundancy for its own sake. The NSG stops traffic before the VM reaches it; `ufw` stops it on the VM.
 
 ## Background
 
