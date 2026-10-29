@@ -1,11 +1,8 @@
 # Step 5: Security posture and just-in-time access
 
-
 **Status:** ✅ Complete (October 28, 2026) — evaluated under the 30-day trial, scheduled to be turned off before it bills
 
-
 ## What I built
-
 
 | Item | Detail |
 |------|--------|
@@ -13,44 +10,31 @@
 | JIT policy | `vm-linux01`, port 22, maximum request duration 3 hours. |
 | NSG change | Deleted the standing `Allow-SSH-Home` rule so the port is closed by default. |
 
-
 **Proof it works:** with the VM running, `ssh` timed out. After requesting access through Defender, the same command connected. The port closes itself when the three hours are up.
-
 
 ## Why it matters
 
-
 Before this, port 22 was open to my home IP permanently. That is better than open to the world, but the door is still unlocked the other 23 hours of the day, and the rule has to be hand-edited every time my public IP changes.
-
 
 Just-in-time flips the default. The port is closed, including to me. Access is requested, granted for a set window, and revoked automatically. The attack surface exists only while someone is actually using it, and there is an audit trail of who asked and when.
 
-
 It also solves a problem that had broken my lab three separate times: my public IP changes depending on whether I am working from home or from the restaurant, and every change meant editing NSG rules by hand. A JIT request uses whatever IP I am on at the time.
-
 
 ## How I did it
 
-
 **Enabling the plan.** The portal would not do it. Environment settings listed the subscription but the row was not clickable. Workload protections showed an "Enable Microsoft Defender for Cloud" button that bounced back to the onboarding page, which claimed everything was already onboarded. The subscription Security blade offered "Try it free for the first 30 days" and did the same thing. Three routes, three dead ends.
-
 
 Checked Access control (IAM) first to rule out permissions. Confirmed Owner on the subscription, so it was not that.
 
-
 Did it from Azure Cloud Shell instead:
-
 
 ```
 az security pricing create -n VirtualMachines --tier standard --subplan P2
 ```
 
-
 Response confirmed `"pricingTier": "Standard"`, `"subPlan": "P2"`, `"freeTrialRemainingTime": "30 days"`. Workload protections then showed Servers 3/3 covered.
 
-
 **Creating the JIT policy.** Defender had not yet scanned the environment, so the Just-in-time page listed no eligible VMs under Configured, Not Configured, or Unsupported. The page header still read "Last week." Rather than wait hours for the next assessment, wrote the policy straight to the management API:
-
 
 ```
 az rest --method put \
@@ -58,14 +42,38 @@ az rest --method put \
   --body '{"kind":"Basic","properties":{"virtualMachines":[{"id":"<vm-resource-id>","ports":[{"number":22,"protocol":"*","allowedSourceAddressPrefix":"*","maxRequestAccessDuration":"PT3H"}]}]}}'
 ```
 
-
 vm-linux01 appeared under Configured immediately.
-
 
 **Removing the standing rule.** JIT adds its own deny rule to the NSG, but at a high priority number. My `Allow-SSH-Home` rule sat at priority 110, so it was evaluated first and kept port 22 open regardless of what JIT wanted. Deleted that rule. Only then was the port actually closed.
 
-
 **Testing.** With the VM running, `ssh -i vm-linux01_key.pem kyleadmin@<ip>` timed out. Then Defender for Cloud → Workload protections → Just-in-time VM access → Configured → vm-linux01 → Request access, port 22, My IP, 3 hours. The same ssh command connected.
+
+## What went wrong
+
+**The portal could not enable the plan.** Three separate paths all dead-ended on the same onboarding page. Not a permissions problem, confirmed Owner. The CLI did in one command what the portal would not do in twenty clicks. Worth remembering the next time a portal blade misbehaves: the API underneath it usually still works.
+
+**Defender had not discovered the VMs.** The just-in-time page showed zero eligible machines across all three tabs because the last assessment predated enabling the plan. Microsoft's own docs say newly discovered resources can take hours to appear. Writing the policy directly through `az rest` skipped the wait.
+
+**The first "it's working" test proved nothing.** SSH timed out, but the VM had powered off a minute earlier, so the timeout could have been either cause. Re-ran it with the machine confirmed running before counting it as proof. A test that can pass for the wrong reason is not a test.
+
+**The old NSG rule silently defeated JIT.** Setting up JIT does not remove existing allow rules, and NSG rules are evaluated lowest priority number first. Leaving `Allow-SSH-Home` at 110 in place would have meant a JIT policy that looked configured in the portal and did nothing at all. This is the kind of misconfiguration that passes a glance and fails an audit.
+
+## Cost
+
+Defender for Servers Plan 2 bills per server per month. With three VMs that is well past my $30 budget alert, so this was built under the 30-day trial with a reminder set to turn it off beforehand.
+
+Turning the plan off is not sufficient on its own. The JIT deny rule stays in the NSG after the plan is disabled, and the standing allow rule has already been deleted, which would mean no SSH access at all. The teardown is three steps:
+
+1. `az security pricing create -n VirtualMachines --tier free`
+2. Delete the leftover `SecurityCenter-JITRule...` rule from `nsg-servers`
+3. Re-create `Allow-SSH-Home` on port 22 for the current public IP
+
+## What I'd do differently
+
+- Check for conflicting NSG rules before assuming a JIT policy is doing anything.
+- Confirm the machine is running before treating a connection timeout as proof of anything.
+- Reach for the CLI sooner when a portal blade loops back on itself.
+- Work out the teardown before enabling a trial, not after. A feature that is painful to remove is a feature you end up paying for.
 
 ## Screenshots
 
@@ -76,3 +84,7 @@ vm-linux01 appeared under Configured immediately.
 **Just-in-time access configured.** Port 22 on vm-linux01 is closed by default and opened only on request. The row shows an approved request active at the time of the screenshot.
 
 ![Just-in-time VM access](screenshots/jit-configured.png)
+
+**The rule it creates.** Inbound rules on `nsg-servers` after enabling just-in-time. Priority 4096 denies port 22 to `10.0.1.6`, and the old standing allow rule for SSH is gone. RDP and HTTP are still plain allow rules pointed at my current public IP, which is the arrangement just-in-time replaces.
+
+![NSG rules showing the just-in-time deny rule](screenshots/nsg-jit-deny-rule.png)
