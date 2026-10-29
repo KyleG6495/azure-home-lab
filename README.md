@@ -3,7 +3,7 @@
 ![Azure](https://img.shields.io/badge/Azure-East%20US-0078D4?logo=microsoftazure&logoColor=white)
 ![Windows Server](https://img.shields.io/badge/Windows%20Server-2022-0078D6?logo=windows&logoColor=white)
 ![Linux](https://img.shields.io/badge/Ubuntu-24.04%20LTS-E95420?logo=ubuntu&logoColor=white)
-![Status](https://img.shields.io/badge/Status-Step%206%20of%208-orange)
+![Status](https://img.shields.io/badge/Status-6%20steps%20complete-brightgreen)
 ![Started](https://img.shields.io/badge/Started-Oct%202026-lightgrey)
 
 A working Azure environment I'm building from scratch while completing the IT Security and Administration program at MyComputerCareer. Every step is written up as I go: what I built, why it matters, what broke, and how I fixed it.
@@ -19,6 +19,7 @@ A working Azure environment I'm building from scratch while completing the IT Se
 | 3 | [Cloud identity](03-entra-id/) | Entra ID, cloud users, MFA enrollment | ✅ Done |
 | 4 | [Linux](04-linux/) | Ubuntu, nginx, SSH hardening, ufw, Bash | ✅ Done |
 | 5 | [Security posture](05-defender/) | Defender for Servers, just-in-time VM access | ✅ Done |
+| 9 | [**Linux domain join**](09-linux-domain-join/) | **realmd, sssd, Kerberos, one identity across Windows and Linux** | ✅ Done |
 | 6 | Backup and recovery | Azure Backup, test restore | 🔧 Next |
 | 7 | Monitoring | Log Analytics, alert rules | ⬜ |
 | 8 | Automation | PowerShell and Bash scripts | ⬜ |
@@ -34,7 +35,7 @@ flowchart TB
                 NSG["🔒 nsg-servers<br/>Allow RDP + HTTP from my IP<br/>SSH closed until requested (JIT)<br/>Deny everything else"]
                 DC["🖥️ vm-dc01 (10.0.1.4)<br/>Windows Server 2022<br/>Domain controller: homelab.local<br/>AD DS + DNS"]
                 MEM["🖥️ vm-member01 (10.0.1.5)<br/>Windows Server 2022<br/>Domain member"]
-                LNX["🐧 vm-linux01 (10.0.1.6)<br/>Ubuntu 24.04 LTS<br/>nginx + ufw<br/>SSH key only, no root"]
+                LNX["🐧 vm-linux01 (10.0.1.6)<br/>Ubuntu 24.04 LTS<br/>nginx + ufw<br/>Domain member via sssd"]
             end
             subgraph CLI["Subnet: snet-clients (10.0.2.0/24)"]
                 WS["💻 workstations<br/>(later)"]
@@ -47,17 +48,19 @@ flowchart TB
     NSG --> MEM
     NSG --> LNX
     DC -. "domain join" .-> MEM
+    DC -. "Kerberos + sssd" .-> LNX
 ```
 
 ## What's in here
 
 ```
 azure-home-lab/
-  01-foundation/        resource group, VNet, subnets, NSG, budget
-  02-windows-domain/    Windows Server 2022 VM, domain controller, AD, GPO
-  03-entra-id/          Entra ID tenant, cloud users, MFA
-  04-linux/             Ubuntu VM, nginx, ufw, SSH hardening, Bash script
-  05-defender/          Defender for Servers Plan 2, just-in-time VM access
+  01-foundation/           resource group, VNet, subnets, NSG, budget
+  02-windows-domain/       Windows Server 2022 VM, domain controller, AD, GPO
+  03-entra-id/             Entra ID tenant, cloud users, MFA
+  04-linux/                Ubuntu VM, nginx, ufw, SSH hardening, Bash script
+  05-defender/             Defender for Servers Plan 2, just-in-time VM access
+  09-linux-domain-join/    realmd, sssd, Kerberos, Linux joined to Active Directory
   06-backup/
   07-monitoring/
   08-scripts/
@@ -99,6 +102,11 @@ Every step follows the same four parts:
 - A connection timeout proves nothing if the machine might be powered off. Confirm the VM is running before calling it a successful block.
 - Defender only shows resources it has assessed, and assessment can lag hours behind enabling the plan. The management API does not wait.
 - Work out how to remove a paid feature before enabling the trial. Turning off just-in-time access leaves its deny rule behind in the NSG.
+- systemd-resolved reserves `.local` for mDNS and will not send those names to a real DNS server. Naming an Active Directory domain `.local` costs an hour on every Linux client.
+- Setting a routing domain explicitly removes the interface's default route for DNS. Add `~.` or everything else stops resolving.
+- A domain controller running DNS needs a forwarder. The gap only shows up once something starts relying on it for public names.
+- `resolvectl domain` is runtime only. Configuration that disappears on reboot is worse than none, because it works long enough to be trusted.
+- An SSH config file (`~/.ssh/config`) turns a long command into `ssh linux01`. Notepad will save it as `config.txt` and SSH will ignore it.
 
 ## Background
 
