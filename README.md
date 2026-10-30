@@ -3,7 +3,7 @@
 ![Azure](https://img.shields.io/badge/Azure-East%20US-0078D4?logo=microsoftazure&logoColor=white)
 ![Windows Server](https://img.shields.io/badge/Windows%20Server-2022-0078D6?logo=windows&logoColor=white)
 ![Linux](https://img.shields.io/badge/Ubuntu-24.04%20LTS-E95420?logo=ubuntu&logoColor=white)
-![Status](https://img.shields.io/badge/Status-9%20steps%20complete-brightgreen)
+![Status](https://img.shields.io/badge/Status-10%20steps%20complete-brightgreen)
 ![Started](https://img.shields.io/badge/Started-Oct%202026-lightgrey)
 
 A working Azure environment I'm building from scratch while completing the IT Security and Administration program at MyComputerCareer. Every step is written up as I go: what I built, why it matters, what broke, and how I fixed it.
@@ -25,7 +25,7 @@ A working Azure environment I'm building from scratch while completing the IT Se
 | 12 | [**Samba AD share**](12-samba-ad-share/) | **Windows file share on Linux, access controlled by Active Directory** | ✅ Done |
 | 6 | Backup and recovery | Azure Backup, test restore | 🔧 Next |
 | 7 | Monitoring | Log Analytics, alert rules | ⬜ |
-| 8 | Automation | PowerShell and Bash scripts | ⬜ |
+| 8 | [**Automation**](08-scripts/) | **Bash + Azure CLI script that builds the whole network in one command** | ✅ Done |
 
 ## Architecture
 
@@ -69,7 +69,7 @@ azure-home-lab/
   12-samba-ad-share/       Samba, winbind, Kerberos, AD-controlled Windows file share
   06-backup/
   07-monitoring/
-  08-scripts/
+  08-scripts/              build-lab.sh, builds the network from one command
 ```
 
 Each folder has a `README.md` with the write-up and a `screenshots/` folder.
@@ -128,6 +128,11 @@ Every step follows the same four parts:
 - "The specified network password is not correct" from Windows does not mean the password is wrong. Read the server's log before retyping it.
 - Verify a permanent DNS fix against the exact query that will use it. A fix that resolves `homelab.local` may still not resolve `_ldap._tcp.dc._msdcs.homelab.local`.
 - Samba keeps its own record of domain membership, separate from the one `realmd` creates for sssd. Joining once does not join both.
+
+- A script that creates resources should print the command that removes them. Working out the teardown afterwards is how trials turn into bills.
+- `set -e` stops a script at the first failure. Without it, everything after a broken step runs against a half-built environment.
+- Check required arguments at the top and exit with a usage message. A script that fails halfway with a confusing error is worse than one that refuses to start.
+- Pasting a long block into a terminal mangles it. Put the file in version control and `curl` it down instead.
 
 ## Background
 
