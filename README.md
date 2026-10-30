@@ -3,7 +3,7 @@
 ![Azure](https://img.shields.io/badge/Azure-East%20US-0078D4?logo=microsoftazure&logoColor=white)
 ![Windows Server](https://img.shields.io/badge/Windows%20Server-2022-0078D6?logo=windows&logoColor=white)
 ![Linux](https://img.shields.io/badge/Ubuntu-24.04%20LTS-E95420?logo=ubuntu&logoColor=white)
-![Status](https://img.shields.io/badge/Status-7%20steps%20complete-brightgreen)
+![Status](https://img.shields.io/badge/Status-8%20steps%20complete-brightgreen)
 ![Started](https://img.shields.io/badge/Started-Oct%202026-lightgrey)
 
 A working Azure environment I'm building from scratch while completing the IT Security and Administration program at MyComputerCareer. Every step is written up as I go: what I built, why it matters, what broke, and how I fixed it.
@@ -21,6 +21,7 @@ A working Azure environment I'm building from scratch while completing the IT Se
 | 5 | [Security posture](05-defender/) | Defender for Servers, just-in-time VM access | ✅ Done |
 | 9 | [**Linux domain join**](09-linux-domain-join/) | **realmd, sssd, Kerberos, one identity across Windows and Linux** | ✅ Done |
 | 10 | [Permissions and cron](10-linux-users-cron/) | File permissions, group-based access, scheduled jobs | ✅ Done |
+| 11 | [Troubleshooting](11-troubleshooting/) | Reading logs, diagnosing a failed service, config tests | ✅ Done |
 | 6 | Backup and recovery | Azure Backup, test restore | 🔧 Next |
 | 7 | Monitoring | Log Analytics, alert rules | ⬜ |
 | 8 | Automation | PowerShell and Bash scripts | ⬜ |
@@ -63,6 +64,7 @@ azure-home-lab/
   05-defender/             Defender for Servers Plan 2, just-in-time VM access
   09-linux-domain-join/    realmd, sssd, Kerberos, Linux joined to Active Directory
   10-linux-users-cron/     file permissions, AD-group-gated share, cron
+  11-troubleshooting/      journalctl, config tests, diagnosing a dead service
   06-backup/
   07-monitoring/
   08-scripts/
@@ -113,6 +115,11 @@ Every step follows the same four parts:
 - "No such file or directory" and "Permission denied" are different problems. The first means the path is wrong, the second means the access is.
 - Servers run on UTC. Scheduling a job for 7am without checking the machine's clock runs it at 3 in the morning.
 - Set a new cron job to fire every minute first, confirm it runs, then move it to the real schedule. And always `crontab -l` afterwards to read back what was actually saved.
+
+- The first error message is a pointer, not an answer. `systemctl` tells you something failed; the journal tells you why.
+- In a service journal, most lines come from systemd and say nothing useful. The application's own lines are the ones that name the fault.
+- A config test (`nginx -t`, `sshd -t`) gives a line number that the journal does not. Run it first.
+- Check `tail` on a config file before assuming the problem is complicated. The most recent edit is at the end, and it is usually the cause.
 
 ## Background
 
