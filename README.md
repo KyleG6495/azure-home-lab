@@ -3,7 +3,7 @@
 ![Azure](https://img.shields.io/badge/Azure-East%20US-0078D4?logo=microsoftazure&logoColor=white)
 ![Windows Server](https://img.shields.io/badge/Windows%20Server-2022-0078D6?logo=windows&logoColor=white)
 ![Linux](https://img.shields.io/badge/Ubuntu-24.04%20LTS-E95420?logo=ubuntu&logoColor=white)
-![Status](https://img.shields.io/badge/Status-8%20steps%20complete-brightgreen)
+![Status](https://img.shields.io/badge/Status-9%20steps%20complete-brightgreen)
 ![Started](https://img.shields.io/badge/Started-Oct%202026-lightgrey)
 
 A working Azure environment I'm building from scratch while completing the IT Security and Administration program at MyComputerCareer. Every step is written up as I go: what I built, why it matters, what broke, and how I fixed it.
@@ -22,6 +22,7 @@ A working Azure environment I'm building from scratch while completing the IT Se
 | 9 | [**Linux domain join**](09-linux-domain-join/) | **realmd, sssd, Kerberos, one identity across Windows and Linux** | ✅ Done |
 | 10 | [Permissions and cron](10-linux-users-cron/) | File permissions, group-based access, scheduled jobs | ✅ Done |
 | 11 | [Troubleshooting](11-troubleshooting/) | Reading logs, diagnosing a failed service, config tests | ✅ Done |
+| 12 | [**Samba AD share**](12-samba-ad-share/) | **Windows file share on Linux, access controlled by Active Directory** | ✅ Done |
 | 6 | Backup and recovery | Azure Backup, test restore | 🔧 Next |
 | 7 | Monitoring | Log Analytics, alert rules | ⬜ |
 | 8 | Automation | PowerShell and Bash scripts | ⬜ |
@@ -65,6 +66,7 @@ azure-home-lab/
   09-linux-domain-join/    realmd, sssd, Kerberos, Linux joined to Active Directory
   10-linux-users-cron/     file permissions, AD-group-gated share, cron
   11-troubleshooting/      journalctl, config tests, diagnosing a dead service
+  12-samba-ad-share/       Samba, winbind, Kerberos, AD-controlled Windows file share
   06-backup/
   07-monitoring/
   08-scripts/
@@ -120,6 +122,12 @@ Every step follows the same four parts:
 - In a service journal, most lines come from systemd and say nothing useful. The application's own lines are the ones that name the fault.
 - A config test (`nginx -t`, `sshd -t`) gives a line number that the journal does not. Run it first.
 - Check `tail` on a config file before assuming the problem is complicated. The most recent edit is at the end, and it is usually the cause.
+
+- Two directory clients on one host means two sets of Linux user IDs for the same account, and they will disagree. Pick sssd or winbind, not both.
+- An `nsswitch.conf` entry pointing at a module that is not installed fails silently. `winbind` and `libnss-winbind` are separate packages.
+- "The specified network password is not correct" from Windows does not mean the password is wrong. Read the server's log before retyping it.
+- Verify a permanent DNS fix against the exact query that will use it. A fix that resolves `homelab.local` may still not resolve `_ldap._tcp.dc._msdcs.homelab.local`.
+- Samba keeps its own record of domain membership, separate from the one `realmd` creates for sssd. Joining once does not join both.
 
 ## Background
 
