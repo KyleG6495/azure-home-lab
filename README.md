@@ -23,8 +23,8 @@ A working Azure environment I'm building from scratch while completing the IT Se
 | 10 | [Permissions and cron](10-linux-users-cron/) | File permissions, group-based access, scheduled jobs | ✅ Done |
 | 11 | [Troubleshooting](11-troubleshooting/) | Reading logs, diagnosing a failed service, config tests | ✅ Done |
 | 12 | [**Samba AD share**](12-samba-ad-share/) | **Windows file share on Linux, access controlled by Active Directory** | ✅ Done |
-| 6 | Backup and recovery | Azure Backup, test restore | 🔧 Next |
-| 7 | Monitoring | Log Analytics, alert rules | ⬜ |
+| 6 | [Backup and recovery](06-backup/) | Azure Backup, tested file-level restore | ✅ Done |
+| 7 | [Monitoring](07-monitoring/) | Metric alerts, action groups, email notification | ✅ Done |
 | 8 | [**Automation**](08-scripts/) | **Bash + Azure CLI script that builds the whole network in one command** | ✅ Done |
 
 ## Architecture
@@ -67,8 +67,8 @@ azure-home-lab/
   10-linux-users-cron/     file permissions, AD-group-gated share, cron
   11-troubleshooting/      journalctl, config tests, diagnosing a dead service
   12-samba-ad-share/       Samba, winbind, Kerberos, AD-controlled Windows file share
-  06-backup/
-  07-monitoring/
+  06-backup/               Recovery Services vault, protection, tested restore
+  07-monitoring/           action group, CPU metric alert
   08-scripts/              build-lab.sh, builds the network from one command
 ```
 
@@ -133,6 +133,11 @@ Every step follows the same four parts:
 - `set -e` stops a script at the first failure. Without it, everything after a broken step runs against a half-built environment.
 - Check required arguments at the top and exit with a usage message. A script that fails halfway with a confusing error is worse than one that refuses to start.
 - Pasting a long block into a terminal mangles it. Put the file in version control and `curl` it down instead.
+
+- An untested backup is an assumption. Verify the recovery point exists before deleting anything, and restore with `cp -p` so ownership survives.
+- Azure does not enable every service family on a subscription by default. Some CLI commands register the provider for you; others fail with `MissingSubscriptionRegistration` and leave it to you.
+- Powering off a domain controller breaks DNS for every machine pointed at it, including ones doing something unrelated. This is what "add a second DC" actually buys.
+- An alert without a time window is an alert people learn to ignore. Five minutes of sustained load is a signal; a spike is noise.
 
 ## Background
 
