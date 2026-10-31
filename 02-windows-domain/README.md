@@ -28,6 +28,18 @@ A domain turns a pile of computers into a company. One directory holds every use
 
 **Group Policy.** Tools → Group Policy Management. Right-click the Staff OU → Create a GPO and link it → `Lock Screen 10 Minutes`. Edit → User Configuration → Policies → Administrative Templates → Control Panel → Personalization → enable Screen saver timeout (600), Enable screen saver, Password protect the screen saver. On the member server as `tuser`: `gpupdate /force`, then `gpresult /r` to confirm.
 
+## Design decisions
+
+**Naming the domain `homelab.local` was the wrong call, and I left it in place deliberately.**
+
+A `.local` suffix was common practice for internal Active Directory domains years ago. Microsoft has recommended against it for a long time, because `.local` is reserved for mDNS, the zero-configuration protocol that lets printers and media devices find each other on a local network. Operating systems treat those names specially and will not resolve them through a normal DNS server without being told to.
+
+I did not know that when I built this. It cost real time later: three of the failures documented in steps 9 and 12 trace back to this one naming choice, including two separate occasions where the same error appeared in a different form.
+
+**What I would choose instead:** a subdomain of a domain I actually own, such as `ad.example.com`. That is the current recommendation and it avoids the collision entirely.
+
+**Why I have not renamed it:** renaming an Active Directory domain is not a small operation, and Microsoft's own guidance is to avoid it. In practice it would mean rebuilding the domain controller and rejoining every machine. More to the point, the write-ups for steps 9 and 12 document what this mistake actually cost, and that record is more useful than a tidier name.
+
 ## What went wrong
 
 **Zero VM quota on a new account.** Every B-series size showed "0 vCPUs of 0 remain" and then "NotAvailableForSubscription" in three regions. New pay-as-you-go accounts start locked. Filed a quota support request (BS and Bsv2 series, 10 vCPUs, East US). Approved in under an hour.
