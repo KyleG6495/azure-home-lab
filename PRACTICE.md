@@ -2,14 +2,18 @@
 
 Building this lab with help is not the same as being able to build it. These are the same tasks written as tickets, with no instructions.
 
-**Rules:**
+**The rule is about how, not what.**
 
-- Allowed: `--help`, the Azure portal, Microsoft Learn, and the write-ups in this repository.
-- Not allowed: step-by-step instructions from anyone, including AI.
-- If stuck for more than 15 minutes, look it up, then note what you had to look up.
+Every resource is allowed: `--help`, the Azure portal, Microsoft Learn, these write-ups, search, and AI. That is how the work gets done in a real job and in my coursework, and pretending otherwise would be practising for a world that does not exist.
+
+The one thing that does not count is taking dictation. Asking what a flag does, why an error happened, or how a service works is research. Being handed a command to paste is not, and that is the gap these exercises are meant to close.
+
+**The test:** if you could not explain, out loud and without notes, what a command does and why you ran it, the exercise is not finished.
+
+- If stuck for more than 15 minutes, look it up, then write down what you had to look up.
 - Record the time taken and what tripped you up.
 
-The point is not speed. It is whether the documentation in this repository is good enough to work from, and whether the understanding is there when nobody is dictating commands.
+The point is not speed. It is whether the documentation in this repository is good enough to work from, and whether the understanding holds up when nobody is reading commands out.
 
 ---
 
@@ -128,6 +132,8 @@ Share a folder from the Linux server so a Windows machine can open it as a netwo
 
 ## Why this file exists
 
-I built this lab with assistance. Following instructions and understanding something are different, and the gap between them only shows up when the instructions stop.
+I built this lab with assistance, and I would use the same assistance on the job. That is not the problem.
 
-These exercises close that gap, and the tracker above is an honest record of which ones I can do unaided.
+The problem is that following instructions and understanding something are different, and the difference only shows up when you have to decide what to do next. These exercises put that decision back on me.
+
+The tracker above is an honest record of which ones I can work through on my own.
