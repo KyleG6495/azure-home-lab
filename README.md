@@ -27,6 +27,15 @@ A working Azure environment I'm building from scratch while completing the IT Se
 | 7 | [Monitoring](07-monitoring/) | Metric alerts, action groups, email notification | ✅ Done |
 | 8 | [**Automation**](08-scripts/) | **Bash + Azure CLI script that builds the whole network in one command** | ✅ Done |
 
+## Skills
+
+- **Azure:** resource groups, virtual networks, network security groups, Defender for Cloud, Azure Backup, Azure Monitor, Azure CLI
+- **Windows Server:** Active Directory, DNS, Group Policy, domain join, Entra ID
+- **Linux:** SSH key authentication, file permissions, cron, systemd services, nginx, ufw, journalctl
+- **Identity integration:** joining Linux to Active Directory with realmd, sssd, and Samba
+- **Troubleshooting:** DNS resolution, Kerberos, SMB, and service logs, with each failure documented
+- **Automation:** Bash and Azure CLI scripts that build and tear down the lab
+
 ## Architecture
 
 ```mermaid
